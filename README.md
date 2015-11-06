@@ -48,7 +48,7 @@ Wait till your EC2 instances are in `2/2 checks passed` state.
 3. Pick a deployment group (Production)
 4. Pick `My application is stored in GitHub` for revision type
 5. Connect to your github account
-6. Put in your repository name (alibozorgkhan/aws-codedeploy-github)
+6. Put in your repository name (goventurelab/aws-codedeploy-github)
 7. Put in a commit version
 8. Pick your desired configuration
 9. Deploy
