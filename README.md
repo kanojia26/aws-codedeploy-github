@@ -18,7 +18,7 @@ Simple walk through for deploying a github-hosted project on EC2 Ubuntu instance
 3. [Configure Instance tab]: Click on `Advanced Details` and paste the following script into the box:
     ```
     #!/bin/bash
-    
+
     apt-get -y update
     apt-get -y install awscli
     apt-get -y install ruby2.0
@@ -56,3 +56,64 @@ Wait till your EC2 instances are in `2/2 checks passed` state.
 
 #### Check what you accomplished:
 1. Check your EC2 instances' ip address. They all should display Apache2's default page.
+
+#### Deploy from terminal
+If you want to deploy using a terminal, you need to have a user that has CodeDeploy permissions. In order to do that, follow these steps:
+
+1. On your AWS dashboard, go to `IAM`.
+2. Create a new user called `Deployer` and store the credentials.
+3. Go back to IAM dashboard and click on `Users`, then click on `Deployer`.
+4. Under `Permissions` tab, click on `Attach Policy`.
+5. Search for `AWSCodeDeployDeployerAccess` and attach the policy.
+
+Now you can deploy using the created user. e.g. deploying using boto3 in python would be something like this:
+
+```
+import boto3
+import os
+import sys
+from botocore.exceptions import ClientError
+
+#   specify region
+region = "us-west-2"
+
+#   boto client
+client = boto3.client('codedeploy', region_name=region)
+
+#   application: development, stating, or production
+application = sys.argv[1]
+
+#   deployment group name: web server, worker, ...
+deployment_group_name = sys.argv[2]
+
+#   deploy!
+try:
+    response = client.create_deployment(
+        applicationName=application,
+        deploymentGroupName=deployment_group_name,
+        revision={
+            'revisionType': 'GitHub',
+            'gitHubLocation': {
+                'repository': 'YOUR_GITHUB_ORGANIZATION/YOUR_REPO_NAME',
+                'commitId': 'COMMIT_ID'
+            }
+        },
+        ignoreApplicationStopFailures=False
+    )
+
+    status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+    if status == 200:
+        deployment_id = response.get('deploymentId')
+        print "Deployment was successful: https://{0}.console.aws.amazon.com/codedeploy/home?region={0}#/deployments/{1}".format(
+            region,
+            deployment_id
+        )
+    else:
+        raise Exception('Unknown error - {}\'s {}'.format(
+            application, deployment_group_name
+        ))
+except ClientError, e:
+    raise Exception('{} - {}\'s {}'.format(
+        unicode(e), application, deployment_group_name
+    ))
+```
